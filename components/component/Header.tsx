@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { LogInIcon, SearchIcon, BellIcon, MailIcon } from "./Icons";
+import { SignedIn, UserButton } from "@clerk/nextjs";
 
 export default function Header() {
   return (
@@ -27,10 +28,11 @@ export default function Header() {
           <Link href="#" className="relative" prefetch={false}>
             <MailIcon className="h-6 w-6 text-muted-foreground" />
           </Link>
-
-          <Link href="#" className="flex items-center gap-2" prefetch={false}>
-            <div></div>
-          </Link>
+          <div>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+          </div>
         </div>
       </div>
     </header>
