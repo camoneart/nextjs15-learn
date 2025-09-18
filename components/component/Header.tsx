@@ -1,5 +1,6 @@
 "use client";
 
+import { SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { LogInIcon, SearchIcon, BellIcon, MailIcon } from "./Icons";
@@ -32,6 +33,9 @@ export default function Header() {
             <SignedIn>
               <UserButton />
             </SignedIn>
+            <SignedOut>
+              <Link href={"/sign-in"} className="p-1 rounded-md w-[100px] grid place-items-center">サインイン</Link>
+            </SignedOut>
           </div>
         </div>
       </div>
