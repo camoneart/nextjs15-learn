@@ -6,20 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SendIcon } from "./Icons";
 import { addPostAction } from "@/lib/actions";
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import SubmitButton from "./SubmitButton";
 
 export default function PostForm() {
-  const [error, setError] = useState<string | undefined>("");
-
-  async function handleSubmit(formData: FormData) {
-    const result = await addPostAction(formData);
-    if (!result?.success) {
-      setError(result?.error);
-      throw new Error(result?.error);
-    }
-    setError("");
-  }
+  const initialState = { success: false, error: "" };
+  const [state, formAction] = useActionState(addPostAction, initialState);
 
   return (
     <div className="flex items-center gap-4">
@@ -27,7 +19,7 @@ export default function PostForm() {
         <AvatarImage src="/placeholder-user.jpg" />
         <AvatarFallback>AC</AvatarFallback>
       </Avatar>
-      <form action={handleSubmit} className="w-full flex items-center gap-4">
+      <form action={formAction} className="w-full flex items-center gap-4">
         <Input
           type="text"
           placeholder="What's on your mind?"
@@ -37,7 +29,7 @@ export default function PostForm() {
         <SubmitButton />
       </form>
 
-      {error && <p className="text-destructive">{error}</p>}
+      {state.error && <p className="text-destructive">{state.error}</p>}
     </div>
   );
 }

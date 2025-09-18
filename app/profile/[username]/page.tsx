@@ -1,7 +1,29 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  params,
+}: {
+  params: { username: string };
+}) {
+  const username = params.username;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      username: username,
+    },
+    include: {
+      _count: {
+        select: {
+          followedBy: true,
+          following: true,
+          posts: true,
+        },
+      },
+    },
+  });
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
@@ -11,38 +33,48 @@ export default async function ProfilePage() {
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24 mb-4 md:mb-0">
                   <AvatarImage
-                    src={"/placeholder-user.jpg"}
-                    alt="Acme Inc Profile"
+                    src={user?.image || "/placeholder-user.jpg"}
+                    alt={`${user?.name || user?.username} Profile`}
                   />
-                  <AvatarFallback>AI</AvatarFallback>
+                  <AvatarFallback>
+                    {user?.name?.charAt(0).toUpperCase() ||
+                     user?.username?.charAt(0).toUpperCase() ||
+                     "U"}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h1 className="text-3xl font-bold">SampleUser</h1>
-                  <div className="text-muted-foreground">@SampleUser</div>
+                  <h1 className="text-3xl font-bold">
+                    {user?.name || user?.username}
+                  </h1>
+                  <div className="text-muted-foreground">@{user?.username}</div>
                 </div>
               </div>
 
               <div className="mt-4 flex items-center gap-4 text-muted-foreground">
                 <div>
                   <MapPinIcon className="w-4 h-4 mr-1 inline" />
-                  xxxxxxxxx
+                  {user?.bio || "No bio"}
                 </div>
                 <div>
                   <LinkIcon className="w-4 h-4 mr-1 inline" />
-                  xxxxxx.com
+                  {user?.email || "No email"}
                 </div>
               </div>
               <div className="mt-6 flex items-center gap-6">
                 <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">10</div>
+                  <div className="text-2xl font-bold">{user?._count.posts}</div>
                   <div className="text-muted-foreground">Posts</div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">300</div>
+                  <div className="text-2xl font-bold">
+                    {user?._count.followedBy}
+                  </div>
                   <div className="text-muted-foreground">Followers</div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">100</div>
+                  <div className="text-2xl font-bold">
+                    {user?._count.following}
+                  </div>
                   <div className="text-muted-foreground">Following</div>
                 </div>
               </div>
@@ -54,53 +86,38 @@ export default async function ProfilePage() {
             <div className="sticky top-14 self-start space-y-6">
               <Button className="w-full">Follow</Button>
               <div>
-                <h3 className="text-lg font-bold">Suggested</h3>
+                <h3 className="text-lg font-bold">Profile Info</h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback>AC</AvatarFallback>
+                      <AvatarImage
+                        src={user?.image || "/placeholder-user.jpg"}
+                      />
+                      <AvatarFallback>
+                        {user?.name?.charAt(0).toUpperCase() ||
+                         user?.username?.charAt(0).toUpperCase() ||
+                         "U"}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">Acme Inc</div>
+                      <div className="font-medium">
+                        {user?.name || user?.username}
+                      </div>
                       <div className="text-muted-foreground text-sm">
-                        @acmeinc
+                        @{user?.username}
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="ml-auto">
-                      <PlusIcon className="w-4 h-4" />
-                    </Button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback>AC</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">Acme Inc</div>
-                      <div className="text-muted-foreground text-sm">
-                        @acmeinc
-                      </div>
+                  {user?.bio && (
+                    <div className="text-sm text-muted-foreground">
+                      {user.bio}
                     </div>
-                    <Button variant="ghost" size="icon" className="ml-auto">
-                      <PlusIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback>AC</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">Acme Inc</div>
-                      <div className="text-muted-foreground text-sm">
-                        @acmeinc
-                      </div>
+                  )}
+                  {user?.email && (
+                    <div className="text-sm text-muted-foreground">
+                      📧 {user.email}
                     </div>
-                    <Button variant="ghost" size="icon" className="ml-auto">
-                      <PlusIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
