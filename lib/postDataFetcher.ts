@@ -1,43 +1,76 @@
 import { prisma } from "./prisma";
 
-export async function fetchPosts(userId: string) {
-  const followingIds = await prisma.follow.findMany({
-    where: {
-      followerId: userId,
-    },
-    select: {
-      followingId: true,
-    },
-  });
+export async function fetchPosts(userId: string, username: string) {
+  if (username) {
+    return await prisma.post.findMany({
+      where: {
+        author: {
+          username: username,
+        },
+      },
+      include: {
+        author: true,
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+        replies: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
 
-  const followingIdsArray = followingIds.map((follow) => follow.followingId);
+  if (!username && userId) {
+    const followingIds = await prisma.follow.findMany({
+      where: {
+        followerId: userId,
+      },
+      select: {
+        followingId: true,
+      },
+    });
 
-  return await prisma.post.findMany({
-    where: {
-      authorId: {
-        in: [userId, ...followingIdsArray],
-      },
-    },
-    include: {
-      author: true,
-      likes: {
-        select: {
-          userId: true,
+    const followingIdsArray = followingIds.map((follow) => follow.followingId);
+
+    return await prisma.post.findMany({
+      where: {
+        authorId: {
+          in: [userId, ...followingIdsArray],
         },
       },
-      replies: {
-        include: {
-          user: true,
+      include: {
+        author: true,
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+        replies: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
+          },
         },
       },
-      _count: {
-        select: {
-          replies: true,
-        },
+      orderBy: {
+        createdAt: "desc",
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+    });
+  }
 }

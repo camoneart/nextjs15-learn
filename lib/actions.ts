@@ -38,7 +38,8 @@ export async function addPostAction(prevState: any, formData: FormData) {
       }
 
       // emailが重複する場合も処理
-      let email = user.emailAddresses?.[0]?.emailAddress || `${user.id}@placeholder.com`;
+      let email =
+        user.emailAddresses?.[0]?.emailAddress || `${user.id}@placeholder.com`;
       const userWithSameEmail = await prisma.user.findUnique({
         where: { email },
       });
@@ -122,10 +123,7 @@ export async function addPostAction(prevState: any, formData: FormData) {
   }
 }
 
-
 export const likeAction = async (postId: string) => {
-  "use server";
-
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Unauthorized");
@@ -158,3 +156,55 @@ export const likeAction = async (postId: string) => {
     console.log(e);
   }
 };
+
+export async function followAction(userId: string) {
+  const { userId: currentUserId } = await auth();
+  console.log("followAction called:", { userId, currentUserId });
+
+  if (!currentUserId) {
+    throw new Error("Unauthorized");
+  }
+  try {
+    // まず対象ユーザーのusernameを取得
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+
+    const existingFollow = await prisma.follow.findFirst({
+      where: {
+        followerId: currentUserId,
+        followingId: userId,
+      },
+    });
+
+    console.log("existingFollow:", existingFollow);
+
+    if (existingFollow) {
+      console.log("Deleting follow relationship");
+      await prisma.follow.delete({
+        where: {
+          id: existingFollow.id,
+        },
+      });
+    } else {
+      console.log("Creating follow relationship");
+      await prisma.follow.create({
+        data: {
+          followerId: currentUserId,
+          followingId: userId,
+        },
+      });
+    }
+
+    // 正しいパスでrevalidate
+    console.log("Revalidating path:", `/profile/${targetUser.username}`);
+    revalidatePath(`/profile/${targetUser.username}`, 'page');
+  } catch (e) {
+    console.error("followAction error:", e);
+  }
+}

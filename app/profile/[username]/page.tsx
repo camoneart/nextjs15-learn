@@ -1,14 +1,23 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+import PostList from "@/components/component/PostList";
+import ProfileActions from "@/components/component/ProfileActions";
+import { auth } from "@clerk/nextjs/server";
+import { notFound } from "next/navigation";
 
 export default async function ProfilePage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const username = params.username;
+  const { username } = await params;
+
+  const { userId: currentUserId } = await auth();
+
+  if (!currentUserId) {
+    notFound();
+  }
 
   const user = await prisma.user.findUnique({
     where: {
@@ -22,8 +31,21 @@ export default async function ProfilePage({
           posts: true,
         },
       },
+      followedBy: {
+        where: {
+          followerId: currentUserId,
+        },
+      },
     },
   });
+
+  if (!user) {
+    notFound();
+  }
+
+  const isCurrentUser = currentUserId === user.id;
+  const isFollowing = user.followedBy.length > 0;
+
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
@@ -38,8 +60,8 @@ export default async function ProfilePage({
                   />
                   <AvatarFallback>
                     {user?.name?.charAt(0).toUpperCase() ||
-                     user?.username?.charAt(0).toUpperCase() ||
-                     "U"}
+                      user?.username?.charAt(0).toUpperCase() ||
+                      "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -60,31 +82,20 @@ export default async function ProfilePage({
                   {user?.email || "No email"}
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-6">
-                <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">{user?._count.posts}</div>
-                  <div className="text-muted-foreground">Posts</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">
-                    {user?._count.followedBy}
-                  </div>
-                  <div className="text-muted-foreground">Followers</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="text-2xl font-bold">
-                    {user?._count.following}
-                  </div>
-                  <div className="text-muted-foreground">Following</div>
-                </div>
-              </div>
+              <ProfileActions
+                userId={user.id}
+                isCurrentUser={isCurrentUser}
+                isFollowing={isFollowing}
+                posts={user._count.posts}
+                followers={user._count.followedBy}
+                following={user._count.following}
+              />
 
               <div className="mt-6 h-[500px] overflow-y-auto">
-                Time Line Here
+                <PostList username={username} />
               </div>
             </div>
             <div className="sticky top-14 self-start space-y-6">
-              <Button className="w-full">Follow</Button>
               <div>
                 <h3 className="text-lg font-bold">Profile Info</h3>
                 <div className="mt-4 space-y-4">
@@ -95,8 +106,8 @@ export default async function ProfilePage({
                       />
                       <AvatarFallback>
                         {user?.name?.charAt(0).toUpperCase() ||
-                         user?.username?.charAt(0).toUpperCase() ||
-                         "U"}
+                          user?.username?.charAt(0).toUpperCase() ||
+                          "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
